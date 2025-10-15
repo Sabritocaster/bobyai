@@ -1,36 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BobyAI — Character Chat Experience
 
-## Getting Started
+Character-forward chat experience inspired by Character.AI. The project highlights mobile-first UI, rich interactions, and modern web tooling with real-time updates powered by Supabase and Groq LLM streaming.
 
-First, run the development server:
+## ✨ Features
+- **Supabase Auth** with Google sign-in, session persistence, and protected routes
+- **Persona system** exposing 5 curated AI characters with unique prompts, tones, and brand visuals
+- **Realtime chat** updates via Supabase channels plus streaming Groq responses with live token rendering
+- **Responsive, animated UI** combining Tailwind, Material UI, and Framer Motion for micro-interactions and page transitions
+- **Chat history workspace** featuring search, filtering, empty states, and realtime updates when new replies land
+- **Deployment-ready** for Vercel with SSR-friendly Supabase helpers and environment validation
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🛠️ Tech Stack
+- [Next.js 15 App Router](https://nextjs.org/) + React 18
+- [Supabase](https://supabase.com/) (Auth, Postgres, Realtime)
+- [Groq SDK](https://console.groq.com/docs/overview) for Llama/Gemma responses
+- [Tailwind CSS](https://tailwindcss.com/) + [Material UI](https://mui.com/) hybrid design system
+- [Framer Motion](https://www.framer.com/motion/) for transitions and streaming effects
+- TypeScript, Zod env validation, UUID utilities
+
+## 📁 Project Structure
+```
+src/
+  app/
+    (public)/page.tsx          # Landing & login experience
+    (protected)/layout.tsx     # Auth gate + app shell
+    (protected)/chat/...       # Chat list + detail routes
+    (protected)/characters/... # Persona explorer
+    (protected)/profile/...    # Account overview
+    api/chat/route.ts          # Groq streaming endpoint
+  components/                  # UI primitives, chat widgets
+  constants/characters.ts      # Persona definitions
+  lib/                         # Supabase, auth, chat services
+  providers/                   # Global theme + Supabase context
+  types/                       # Shared TypeScript contracts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Environment Variables
+Create a `.env.local` (or configure in Vercel) using the sample below:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_SUPABASE_URL="https://<your-project>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<supabase-anon-key>"
+SUPABASE_SERVICE_ROLE_KEY="<optional-service-role-key>"
+GROQ_API_KEY="<groq-api-key>"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `SUPABASE_SERVICE_ROLE_KEY` is only required for local tooling or background scripts.
+- The Groq key must have access to `llama-3.1-70b-versatile` (or adjust the model in `app/api/chat/route.ts`).
 
-## Learn More
+## 🗄️ Database Schema (Supabase)
+Run the SQL below in the Supabase SQL editor to create required tables:
 
-To learn more about Next.js, take a look at the following resources:
+```sql
+create extension if not exists "uuid-ossp";
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+create table if not exists chat_sessions (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  character_id text not null,
+  title text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+create table if not exists chat_messages (
+  id uuid primary key default uuid_generate_v4(),
+  session_id uuid not null references chat_sessions(id) on delete cascade,
+  sender text not null check (sender in ('user','assistant','system')),
+  content text not null,
+  created_at timestamptz not null default now()
+);
 
-## Deploy on Vercel
+create index if not exists chat_sessions_user_idx
+  on chat_sessions(user_id, updated_at desc);
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+create index if not exists chat_messages_session_idx
+  on chat_messages(session_id, created_at);
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+alter table chat_sessions enable row level security;
+alter table chat_messages enable row level security;
+
+create policy "Users manage their sessions"
+  on chat_sessions
+  for all using (auth.uid() = user_id);
+
+create policy "Users manage their messages"
+  on chat_messages
+  for all using (
+    exists (
+      select 1 from chat_sessions cs
+      where cs.id = chat_messages.session_id
+        and cs.user_id = auth.uid()
+    )
+  );
+```
+
+Enable **Google OAuth** inside Supabase Auth settings and supply the client credentials there. Update the callback URL to `https://<your-domain>.supabase.co/auth/v1/callback` (Supabase handles the redirect).
+
+## 🚀 Local Development
+```bash
+# install dependencies
+npm install
+
+# run lint (optional but recommended)
+npm run lint
+
+# start dev server
+npm run dev
+```
+
+Visit `http://localhost:3000` and sign in with Google. Supabase sessions persist via the SSR helpers in `src/lib/supabase`.
+
+### Test the Groq endpoint locally
+1. Ensure `GROQ_API_KEY` is present.
+2. Start the dev server and open a chat.
+3. Messages stream token-by-token while Supabase realtime keeps other tabs/devices in sync.
+
+If the Groq key is missing, the UI surfaces a friendly error (while keeping optimistic messages consistent).
+
+## ☁️ Deploying to Vercel
+1. Push this repo to GitHub (public as requested).
+2. Create a new Vercel project and import the repository.
+3. Add the environment variables from `.env.example` in the Vercel dashboard (Production + Preview + Development).
+4. Set `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY` from your Supabase project, along with `GROQ_API_KEY`.
+5. Vercel will build with `npm install && npm run build`. No extra build commands are required.
+
+Supabase Auth cookies work automatically in Vercel thanks to the `@supabase/ssr` helpers.
+
+## 🧭 Next Steps & Ideas
+- Expand persona management with an admin editor stored in Supabase
+- Add chat session naming/renaming and soft delete
+- Persist token usage metrics per session for analytics
+- Integrate push notifications or PWA shell for mobile re-engagement
+
+---
+
+Crafted with care to highlight animation polish, realtime state, and production-readiness.
