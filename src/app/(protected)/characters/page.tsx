@@ -24,7 +24,7 @@ export default function CharactersPage() {
 
       <Grid container spacing={2.5}>
         {CHARACTERS.map((character) => (
-          <Grid item xs={12} sm={6} key={character.id}>
+          <Grid size={{ xs: 12, sm: 6 }} key={character.id}>
             <CharacterCard character={character} />
           </Grid>
         ))}

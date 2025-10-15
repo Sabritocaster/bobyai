@@ -13,7 +13,7 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> {
       env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       {
         cookieOptions: {
-          lifetime: 60 * 60 * 24 * 7, // 7 days
+          maxAge: 60 * 60 * 24 * 7, // 7 days
           sameSite: "lax",
         },
       },

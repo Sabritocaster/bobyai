@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/server";
 import { LandingHero } from "@/components/landing/LandingHero";
@@ -9,5 +10,9 @@ export default async function LandingPage() {
     redirect("/chat");
   }
 
-  return <LandingHero />;
+  return (
+    <Suspense>
+      <LandingHero />
+    </Suspense>
+  );
 }
