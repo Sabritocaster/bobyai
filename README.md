@@ -45,8 +45,7 @@ SUPABASE_SERVICE_ROLE_KEY="<optional-service-role-key>"
 GROQ_API_KEY="<groq-api-key>"
 ```
 
-- `SUPABASE_SERVICE_ROLE_KEY` is only required for local tooling or background scripts.
-- The Groq key must have access to `llama-3.1-70b-versatile` (or adjust the model in `app/api/chat/route.ts`).
+- The Groq key must have access to `llama-3.1-8b-instant` (or adjust the model in `app/api/chat/route.ts`).
 
 ## 🗄️ Database Schema (Supabase)
 Run the SQL below in the Supabase SQL editor to create required tables:
@@ -116,7 +115,7 @@ Visit `http://localhost:3000` and sign in with Google. Supabase sessions persist
 2. Start the dev server and open a chat.
 3. Messages stream token-by-token while Supabase realtime keeps other tabs/devices in sync.
 
-If the Groq key is missing, the UI surfaces a friendly error (while keeping optimistic messages consistent).
+If the Groq key is missing, the UI surfaces a friendly error.
 
 ## ☁️ Deploying to Vercel
 1. Push this repo to GitHub (public as requested).
@@ -124,15 +123,3 @@ If the Groq key is missing, the UI surfaces a friendly error (while keeping opti
 3. Add the environment variables from `.env.example` in the Vercel dashboard (Production + Preview + Development).
 4. Set `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY` from your Supabase project, along with `GROQ_API_KEY`.
 5. Vercel will build with `npm install && npm run build`. No extra build commands are required.
-
-Supabase Auth cookies work automatically in Vercel thanks to the `@supabase/ssr` helpers.
-
-## 🧭 Next Steps & Ideas
-- Expand persona management with an admin editor stored in Supabase
-- Add chat session naming/renaming and soft delete
-- Persist token usage metrics per session for analytics
-- Integrate push notifications or PWA shell for mobile re-engagement
-
----
-
-Crafted with care to highlight animation polish, realtime state, and production-readiness.

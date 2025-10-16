@@ -57,7 +57,7 @@ export const LandingHero = memo(function LandingHero() {
               lineHeight: 1.1,
             }}
           >
-            Design-rich AI characters with personality and nuance.
+            Chat with AI characters with personality and nuance.
           </Typography>
         </motion.div>
 
